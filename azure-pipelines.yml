@@ -1,17 +1,84 @@
 trigger:
   - master
 
-pool:
-  name: 'Ubuntu 1604 On Premises'
+stages:
+- stage: build
+  displayName: 'Package scripts'
+  pool:
+    vmImage: ubuntu-16.04
 
-steps:
-  - task: GitVersion@5
-    inputs:
-      runtime: 'core'
-      preferBundledVersion: false
-      configFilePath: 'GitVersion.yml'
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.SourcesDirectory)/src'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
+  jobs:
+  - job: build
+    displayName: Package scripts
+
+    steps:
+    - task: GitVersion@5
+      inputs:
+        runtime: 'core'
+        preferBundledVersion: false
+        configFilePath: 'GitVersion.yml'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/src'
+        ArtifactName: 'drop'
+
+- stage: terraform_plan
+  displayName: 'terraform plan'
+  dependsOn: build
+  pool:
+    vmImage: ubuntu-16.04
+  condition: succeeded('build')
+
+  jobs:
+  - deployment: terraform_plan
+    displayName: terraform plan
+    environment: prod
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+            displayName: 'Replace tokens in $(Pipeline.Workspace)/drop/*.tf'
+            inputs:
+              targetFiles: '$(Pipeline.Workspace)/drop/*.tf'
+              escapeType: none
+              tokenPrefix: '__'
+              tokenSuffix: '__'
+
+          - script: |
+              terraform init -no-color -input=false
+              terraform plan -out=tfplan -no-color -input=false
+            displayName: 'terraform plan'
+            workingDDirectory: '$(Pipeline.Workspace)/drop'
+
+          - script: |
+              echo "Compressing $(Pipeline.Workspace)/drop directory..."
+              tar -czf $(STATE_KEY).tar.gz -C $(Pipeline.Workspace)/drop .
+            displayName: 'Compress $(TFPATH) Artifact'
+
+          - publish: $(STATE_KEY).tar.gz
+            artifact: drop
+
+- stage: terraform_apply
+  displayName: 'terraform apply'
+  dependsOn: terraform_plan
+  pool:
+    vmImage: ubuntu-16.04
+  condition: succeeded('terraform_plan')
+
+  jobs:
+  - deployment: terraform_apply
+    displayName: terraform apply
+    environment: prod
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
