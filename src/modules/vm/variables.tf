@@ -43,6 +43,11 @@ variable "tags" {
   type        = map
 }
 
+variable "virtual_machine_count" {
+  description = "Specifies the number of the Virtual Machines to create."
+  type        = string
+}
+
 variable "virtual_machine_name" {
   description = "Specifies the name of the Virtual Machine."
   type        = string

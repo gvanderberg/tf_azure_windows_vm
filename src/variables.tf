@@ -57,7 +57,10 @@ variable "tags" {
     location    = "__tags_location__"
     managedBy   = "__tags_managed_by__"
   }
-  type = "map"
+}
+
+variable "virtual_machine_count" {
+  default = "__virtual_machine_count__"
 }
 
 variable "virtual_machine_name" {
