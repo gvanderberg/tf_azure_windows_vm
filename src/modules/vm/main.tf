@@ -12,7 +12,7 @@ resource "random_integer" "this" {
 
 resource "azurerm_network_interface" "this" {
   count               = var.virtual_machine_count
-  name                = format("%s-nic-%s", var.virtual_machine_name, random_integer.this[count.index].result)
+  name                = format("%s-nic-%s", format("%s%s", var.virtual_machine_name, count.index + 1), random_integer.this[count.index].result)
   resource_group_name = var.resource_group_name
   location            = var.resource_group_location
 
@@ -41,7 +41,7 @@ resource "azurerm_virtual_machine" "this" {
   }
 
   storage_os_disk {
-    name              = format("%s_os_disk_1_%s", var.virtual_machine_name, random_integer.this[count.index].result)
+    name              = format("%s_os_disk_1_%s", format("%s%s", var.virtual_machine_name, count.index + 1), random_integer.this[count.index].result)
     caching           = "ReadWrite"
     create_option     = "FromImage"
     disk_size_gb      = "128"
@@ -49,7 +49,7 @@ resource "azurerm_virtual_machine" "this" {
   }
 
   storage_data_disk {
-    name              = format("%s_data_disk_1_%s", var.virtual_machine_name, random_integer.this[count.index].result)
+    name              = format("%s_data_disk_1_%s", format("%s%s", var.virtual_machine_name, count.index + 1), random_integer.this[count.index].result)
     caching           = "ReadOnly"
     create_option     = "Empty"
     disk_size_gb      = "256"
