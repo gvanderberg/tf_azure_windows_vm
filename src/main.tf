@@ -1,12 +1,12 @@
 provider "azurerm" {
-  version = "=1.34.0"
-
-  client_id       = var.client_id
-  client_secret   = var.client_secret
-  subscription_id = var.subscription_id
-  tenant_id       = var.tenant_id
+  version = "~>1.41.0"
 }
 
 provider "random" {
-  version = "=2.1.2"
+  version = "~>2.2.1"
+}
+
+terraform {
+  required_version = "~>0.12.0"
+  backend "remote" {}
 }
