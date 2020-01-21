@@ -4,6 +4,10 @@ trigger:
 variables:
 - group: Terraform BE
 - group: Terraform CLI
+- name: tf_path
+  value: $(Pipeline.Workspace)/drop
+- name: tf_state_key
+  value: $(Build.BuildId)
 
 stages:
 - stage: build
@@ -73,7 +77,12 @@ stages:
               ARM_SUBSCRIPTION_ID: $(tf_subscription_id)
             workingDirectory: $(Pipeline.Workspace)/drop
 
-          - publish: $(Pipeline.Workspace)/drop
+          - script: |
+              echo "Compressing $(tf_path) directory..."
+              tar -czf $(tf_state_key).tar.gz -C $(tf_path) .
+            displayName: 'Compress $(tf_path) Artifact'
+
+          - publish: $(tf_state_key).tar.gz
             artifact: tfplan
 
 - stage: terraform_apply
@@ -96,6 +105,12 @@ stages:
             artifact: tfplan
 
           - script: |
+              mkdir -p $(tf_state_key)/tf 
+              tar -xzvf tfplan/$(tf_state_key).tar.gz --directory $(tf_state_key)/tf
+            displayName: 'Extract Artifact to $(tf_state_key)/tf'
+            workingDirectory: '$(Pipeline.Workspace)'
+
+          - script: |
               terraform apply -auto-approve -no-color -input=false tfplan
             displayName: terraform apply
             env:
@@ -103,4 +118,4 @@ stages:
               ARM_CLIENT_SECRET: $(tf_client_secret)
               ARM_TENANT_ID: $(tf_tenant_id)
               ARM_SUBSCRIPTION_ID: $(tf_subscription_id)
-            workingDirectory: $(Pipeline.Workspace)/tfplan
+            workingDirectory: $(Pipeline.Workspace)/$(tf_state_key)/tf
