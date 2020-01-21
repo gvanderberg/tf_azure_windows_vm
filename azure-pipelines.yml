@@ -2,20 +2,12 @@ trigger:
   - master
 
 variables:
-- group: 'Terraform BE'
-- group: 'Terraform CLI (Prod)'
-- name: arm_client_id
-  value: $(terraform.client_id)
-- name: arm_client_secret
-  value: $(terraform.client_secret)
-- name: arm_subscription_id
-  value: $(terraform.subscription_id)
-- name: arm_tenant_id
-  value: $(terraform.tenant_id)
+- group: Terraform BE
+- group: Terraform CLI
 
 stages:
 - stage: build
-  displayName: 'Package scripts'
+  displayName: Package scripts
   pool:
     vmImage: ubuntu-latest
 
@@ -27,15 +19,15 @@ stages:
     - task: GitVersion@5
       inputs:
         preferBundledVersion: false
-        configFilePath: 'GitVersion.yml'
+        configFilePath: GitVersion.yml
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/src'
-        ArtifactName: 'drop'
+        PathtoPublish: $(Build.SourcesDirectory)/src
+        ArtifactName: drop
 
 - stage: terraform_plan
-  displayName: 'terraform plan'
+  displayName: terraform plan
   dependsOn: build
   pool:
     vmImage: ubuntu-latest
@@ -54,32 +46,32 @@ stages:
             artifact: drop
 
           - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-            displayName: 'Replace tokens in $(Pipeline.Workspace)/drop/*.tf'
+            displayName: Replace tokens in $(Pipeline.Workspace)/drop/*.tf
             inputs:
-              targetFiles: '$(Pipeline.Workspace)/drop/*.tf'
+              targetFiles: $(Pipeline.Workspace)/drop/*.tf
               escapeType: none
-              tokenPrefix: '__'
-              tokenSuffix: '__'
+              tokenPrefix: __
+              tokenSuffix: __
 
           - script: |
               set -e
 
               echo 'hostname = "app.terraform.io"' | tee -a backend.tfvars
-              echo 'organization = "$(terraform.organization)"' | tee -a backend.tfvars
-              echo 'token = "$(terraform.token)"' | tee -a backend.tfvars
+              echo 'organization = "$(tf_organization)"' | tee -a backend.tfvars
+              echo 'token = "$(tf_token)"' | tee -a backend.tfvars
               echo 'workspaces { name = "$(workspace_name)" }' | tee -a backend.tfvars
 
               # Initialize Terraform.
               terraform init -no-color -input=false -backend-config="backend.tfvars"
 
               terraform plan -out=tfplan -no-color -input=false
-            displayName: 'terraform plan'
+            displayName: terraform plan
             env:
-              ARM_CLIENT_ID: $(arm_client_id)
-              ARM_CLIENT_SECRET: $(arm_client_secret)
-              ARM_TENANT_ID: $(arm_tenant_id)
-              ARM_SUBSCRIPTION_ID: $(arm_subscription_id)
-            workingDirectory: '$(Pipeline.Workspace)/drop'
+              ARM_CLIENT_ID: $(tf_client_id)
+              ARM_CLIENT_SECRET: $(tf_client_secret)
+              ARM_TENANT_ID: $(tf_tenant_id)
+              ARM_SUBSCRIPTION_ID: $(tf_subscription_id)
+            workingDirectory: $(Pipeline.Workspace)/drop
 
           - publish: $(Pipeline.Workspace)/drop
             artifact: tfplan
@@ -105,10 +97,10 @@ stages:
 
           - script: |
               terraform apply -auto-approve -no-color -input=false tfplan
-            displayName: 'terraform plan'
+            displayName: terraform apply
             env:
-              ARM_CLIENT_ID: $(arm_client_id)
-              ARM_CLIENT_SECRET: $(arm_client_secret)
-              ARM_TENANT_ID: $(arm_tenant_id)
-              ARM_SUBSCRIPTION_ID: $(arm_subscription_id)
-            workingDirectory: '$(Pipeline.Workspace)/tfplan'
+              ARM_CLIENT_ID: $(tf_client_id)
+              ARM_CLIENT_SECRET: $(tf_client_secret)
+              ARM_TENANT_ID: $(tf_tenant_id)
+              ARM_SUBSCRIPTION_ID: $(tf_subscription_id)
+            workingDirectory: $(Pipeline.Workspace)/tfplan
