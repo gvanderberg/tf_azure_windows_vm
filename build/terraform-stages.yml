@@ -1,0 +1,70 @@
+stages:
+- stage: build
+  displayName: 'package scripts'
+  pool:
+    vmImage: ubuntu-latest
+
+  jobs:
+  - template: terraform-build.yml
+
+- stage: tf_plan_we
+  displayName: 'tf plan (westeurope)'
+  dependsOn: build
+  pool:
+    vmImage: ubuntu-latest
+  variables:
+  - name: computer_name
+    value: 'azvpwewinba2'
+  - name: location
+    value: 'westeurope'
+  - name: resource_group_name
+    value: 'azrg-devp-we-devops'
+  - name: virtual_machine_name
+    value: 'azvm-devp-we-winba2'
+  - name: workspace_name
+    value: 'windows_ba_we-prd'
+  condition: succeeded('build')
+
+  jobs:
+  - template: terraform-plan.yml
+
+- stage: tf_apply_we
+  displayName: 'tf apply (westeurope)'
+  dependsOn: tf_plan_we
+  pool:
+    vmImage: ubuntu-latest
+  condition: succeeded('tf_plan_we')
+
+  jobs:
+  - template: terraform-apply.yml
+
+- stage: tf_plan_ne
+  displayName: 'tf plan (northeurope)'
+  dependsOn: build
+  pool:
+    vmImage: ubuntu-latest
+  variables:
+  - name: computer_name
+    value: 'azvpnewinba2'
+  - name: location
+    value: 'northeurope'
+  - name: resource_group_name
+    value: 'azrg-devp-ne-devops'
+  - name: virtual_machine_name
+    value: 'azvm-devp-ne-winba2'
+  - name: workspace_name
+    value: 'windows_ba_ne-prd'
+  condition: succeeded('build')
+
+  jobs:
+  - template: terraform-plan.yml
+
+- stage: tf_apply_ne
+  displayName: 'tf apply (northeurope)'
+  dependsOn: tf_plan_ne
+  pool:
+    vmImage: ubuntu-latest
+  condition: succeeded('tf_plan_ne')
+
+  jobs:
+  - template: terraform-apply.yml
