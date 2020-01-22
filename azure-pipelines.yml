@@ -49,7 +49,7 @@ stages:
           - download: current
             artifact: drop
 
-          - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+          - task: replacetokens@3
             displayName: Replace tokens in $(Pipeline.Workspace)/drop/*.tf
             inputs:
               targetFiles: $(Pipeline.Workspace)/drop/*.tf
@@ -68,6 +68,7 @@ stages:
               # Initialize Terraform.
               terraform init -no-color -input=false -backend-config="backend.tfvars"
 
+              # Plan Terraform.
               terraform plan -out=tfplan -no-color -input=false
             displayName: terraform plan
             env:
