@@ -13,7 +13,7 @@ variables:
 - name: resource_group_name
   value: 'azrg-prd-zn-devops'
 - name: subnet_name
-  value: 'azsnet-prd-lan'
+  value: 'azsnet-lan'
 - name: subnet_resource_group_name
   value: 'azrg-prd-zn-vnet'
 - name: subnet_virtual_network_name
