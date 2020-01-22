@@ -1,7 +1,6 @@
 steps:
 - download: current
   artifact: 'drop'
-  enabled: false
 
 - task: replacetokens@3
   displayName: 'Replace tokens in $(Pipeline.Workspace)/drop/*.tf'
@@ -38,4 +37,4 @@ steps:
   displayName: 'Compress $(tf_path) Artifact'
 
 - publish: $(tf_state_key).tar.gz
-  artifact: '$(artifact_name)'
+  artifact: 'tfplan'
