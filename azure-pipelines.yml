@@ -38,4 +38,4 @@ variables:
   value: 'windows_ba-prd'
 
 stages:
-- template: terraform-stages.yml
+- template: './build/terraform-stages.yml'
